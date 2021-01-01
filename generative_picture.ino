@@ -64,13 +64,6 @@ void draw() {
   display.powerOff();
 }
 
-int getXYBufferAddress(int x, int y) {
-  if (x >= BOARD_WIDTH || y >= BOARD_HEIGHT) {
-    return -1;
-  }
-  return x + (BOARD_WIDTH * y);
-}
-
 bool getCell(int x, int y) {
   return board[x + (BOARD_WIDTH * y)];
 }
