@@ -21,26 +21,19 @@ RTC_DATA_ATTR bool board[BOARD_SIZE] = {};
 GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*BUSY=*/ 4));
 
 void setup() {
-  Serial.begin(115200);
-
   if (boot_count == 0) {
-    Serial.println("First boot");
     initializeBoard();
   }
 
   if (boot_count % 100 == 0) {
-    Serial.println("Clearing screen");
     clearDisplay();
   }
 
   updateBoard();
   draw();
 
-
-  Serial.println(boot_count);
   boot_count++;
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  Serial.println("Sleeping...");
   esp_deep_sleep_start();
 }
 
@@ -48,7 +41,7 @@ void setup() {
 void loop() {}
 
 void clearDisplay() {
-  display.init(115200, true, 2, false);
+  display.init(0, true, 2, false);
   display.setRotation(0);
   display.setFullWindow();
   display.clearScreen();
@@ -56,7 +49,7 @@ void clearDisplay() {
 }
 
 void draw() {
-  display.init(115200, false, 2, false);
+  display.init(0, false, 2, false);
 
   display.setRotation(0);
   display.setFullWindow();
