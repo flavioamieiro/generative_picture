@@ -3,14 +3,17 @@
 
 #define uS_TO_S_FACTOR 1000000ULL
 #define TIME_TO_SLEEP 5
+
 #define W 800
 #define H 480
+
 #define BOARD_WIDTH 40
 #define BOARD_HEIGHT 40
+#define BOARD_SIZE BOARD_WIDTH * BOARD_HEIGHT
+
 #define CELL_W 800 / BOARD_WIDTH
 #define CELL_H 480 / BOARD_HEIGHT
 
-#define BOARD_SIZE BOARD_WIDTH * BOARD_HEIGHT
 
 RTC_DATA_ATTR bool first_boot = true;
 RTC_DATA_ATTR bool board[BOARD_SIZE] = {};
@@ -123,9 +126,9 @@ void initializeBoard() {
     board[i] = false;
   }
 
-  setCell(11, 10, true);
-  setCell(12, 11, true);
-  setCell(10, 12, true);
-  setCell(11, 12, true);
-  setCell(12, 12, true);
+  for (int i=0; i<300; i++) {
+    int x = random(0, BOARD_WIDTH);
+    int y = random(0, BOARD_HEIGHT);
+    setCell(x, y, true);
+  }
 }
