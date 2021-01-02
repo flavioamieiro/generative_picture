@@ -29,7 +29,6 @@ void setup() {
     clearDisplay();
   }
 
-  updateBoard();
   draw();
 
   boot_count++;
@@ -53,6 +52,17 @@ void draw() {
 
   display.setRotation(0);
   display.setFullWindow();
+  display.fillScreen(GxEPD_WHITE);
+  for (int x=0; x<BOARD_WIDTH; x++){
+    for (int y=0; y<BOARD_HEIGHT; y++) {
+      uint16_t color = getCell(x, y) ? GxEPD_BLACK : GxEPD_WHITE;
+      display.fillRect(x*CELL_W, y*CELL_H, CELL_W, CELL_H, color);
+    }
+  }
+  display.displayWindow(0, 0, display.width(), display.height());
+
+  updateBoard();
+
   display.fillScreen(GxEPD_WHITE);
   for (int x=0; x<BOARD_WIDTH; x++){
     for (int y=0; y<BOARD_HEIGHT; y++) {
