@@ -34,6 +34,7 @@ void setup() {
 
   boot_count++;
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  display.powerOff();
   esp_deep_sleep_start();
 }
 
@@ -45,7 +46,6 @@ void clearDisplay() {
   display.setRotation(0);
   display.setFullWindow();
   display.clearScreen();
-  display.powerOff();
 }
 
 void draw() {
@@ -61,7 +61,6 @@ void draw() {
     }
   }
   display.displayWindow(0, 0, display.width(), display.height());
-  display.powerOff();
 }
 
 bool getCell(int x, int y) {
