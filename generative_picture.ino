@@ -59,7 +59,8 @@ void draw() {
       display.fillRect(x*CELL_W, y*CELL_H, CELL_W, CELL_H, color);
     }
   }
-  display.displayWindow(0, 0, display.width(), display.height());
+
+  display.setOldBuffer();
 
   updateBoard();
 
