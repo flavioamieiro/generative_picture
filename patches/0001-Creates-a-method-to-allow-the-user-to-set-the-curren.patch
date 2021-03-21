@@ -1,0 +1,71 @@
+From 76fb66f0bdb699eb0d798fa521bc7b0ca0ddb8e8 Mon Sep 17 00:00:00 2001
+From: Flavio Amieiro <amieiro.flavio@gmail.com>
+Date: Sat, 2 Jan 2021 16:48:17 +0100
+Subject: [PATCH] Creates a method to allow the user to set the current buffer
+ as "old" data
+
+I only did it for the 7.5" T7 display, since that's what I can test on.
+
+(For this display, at least, )After the state of the "previous" buffer
+was lost (after waking up from deep sleep, for example), a partial
+update will result in noise showing up on screen (apparenlty in places
+where there were black pixels). By setting the "old" data to the
+controller's SRAM (with the "Data Start transmission 1" command), we
+avoid this issue.
+---
+ src/GxEPD2_BW.h           |  4 ++++
+ src/epd/GxEPD2_750_T7.cpp | 10 ++++++++++
+ src/epd/GxEPD2_750_T7.h   |  1 +
+ 3 files changed, 15 insertions(+)
+
+diff --git a/src/GxEPD2_BW.h b/src/GxEPD2_BW.h
+index a4c98aa..792745f 100644
+--- a/src/GxEPD2_BW.h
++++ b/src/GxEPD2_BW.h
+@@ -176,6 +176,10 @@ class GxEPD2_BW : public GxEPD2_GFX_BASE_CLASS
+       if (!partial_update_mode) epd2.powerOff();
+     }
+ 
++    void setOldBuffer() {
++      epd2.setPrevious(_buffer);
++    }
++
+     // display part of buffer content to screen, useful for full screen buffer
+     // displayWindow, use parameters according to actual rotation.
+     // x and w should be multiple of 8, for rotation 0 or 2,
+diff --git a/src/epd/GxEPD2_750_T7.cpp b/src/epd/GxEPD2_750_T7.cpp
+index 2d31b40..e3adebe 100644
+--- a/src/epd/GxEPD2_750_T7.cpp
++++ b/src/epd/GxEPD2_750_T7.cpp
+@@ -18,6 +18,16 @@ GxEPD2_750_T7::GxEPD2_750_T7(int8_t cs, int8_t dc, int8_t rst, int8_t busy) :
+ {
+ }
+ 
++void GxEPD2_750_T7::setPrevious(const uint8_t bitmap[]) {
++  _writeCommand(0x10);
++  _startTransfer();
++  for (uint32_t i = 0; i < uint32_t(WIDTH) * uint32_t(HEIGHT) / 8; i++)
++  {
++    _transfer(bitmap[i]);
++  }
++  _endTransfer();
++}
++
+ void GxEPD2_750_T7::clearScreen(uint8_t value)
+ {
+   writeScreenBuffer(value);
+diff --git a/src/epd/GxEPD2_750_T7.h b/src/epd/GxEPD2_750_T7.h
+index e973e95..b0e0db4 100644
+--- a/src/epd/GxEPD2_750_T7.h
++++ b/src/epd/GxEPD2_750_T7.h
+@@ -34,6 +34,7 @@ class GxEPD2_750_T7 : public GxEPD2_EPD
+     // constructor
+     GxEPD2_750_T7(int8_t cs, int8_t dc, int8_t rst, int8_t busy);
+     // methods (virtual)
++    void setPrevious(const uint8_t bitmap[]);
+     //  Support for Bitmaps (Sprites) to Controller Buffer and to Screen
+     void clearScreen(uint8_t value = 0xFF); // init controller memory and screen (default white)
+     void writeScreenBuffer(uint8_t value = 0xFF); // init controller memory (default white)
+-- 
+2.30.2
+
