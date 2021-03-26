@@ -13,140 +13,108 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include <GxEPD2_BW.h>
-#include <Fonts/FreeMonoBold9pt7b.h>  
 
-#define uS_TO_S_FACTOR 1000000ULL
-#define TIME_TO_SLEEP 5
+#define W 480
+#define H 800
+#define BUFF_SIZE (W * H) / 8
 
-#define W 800
-#define H 480
+#define SCALE 2
 
-#define BOARD_WIDTH 40
-#define BOARD_HEIGHT 40
-#define BOARD_SIZE BOARD_WIDTH * BOARD_HEIGHT
-
-#define CELL_W 800 / BOARD_WIDTH
-#define CELL_H 480 / BOARD_HEIGHT
-
-
-RTC_DATA_ATTR int boot_count = 0;
-RTC_DATA_ATTR bool board[BOARD_SIZE] = {};
+uint8_t buff[BUFF_SIZE] = {};
 
 GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(/*CS=5*/ SS, /*DC=*/ 17, /*RST=*/ 16, /*BUSY=*/ 4));
 
 void setup() {
-  if (boot_count == 0) {
-    initializeBoard();
-  }
-
-  if (boot_count % 100 == 0) {
-    clearDisplay();
-  }
-
-  draw();
-
-  boot_count++;
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  display.powerOff();
-  esp_deep_sleep_start();
+  clearDisplay();
+  initBuff();
 }
 
 
-void loop() {}
+void loop() {
+  draw();
+  delay(100);
+}
 
 void clearDisplay() {
   display.init(0, true, 2, false);
-  display.setRotation(0);
+  display.setRotation(3);
   display.setFullWindow();
   display.clearScreen();
 }
 
 void draw() {
-  display.init(0, false, 2, false);
-
-  display.setRotation(0);
+  updateBuff();
   display.setFullWindow();
   display.fillScreen(GxEPD_WHITE);
-  for (int x=0; x<BOARD_WIDTH; x++){
-    for (int y=0; y<BOARD_HEIGHT; y++) {
-      uint16_t color = getCell(x, y) ? GxEPD_BLACK : GxEPD_WHITE;
-      display.fillRect(x*CELL_W, y*CELL_H, CELL_W, CELL_H, color);
-    }
-  }
-
-  display.setOldBuffer();
-
-  updateBoard();
-
-  display.fillScreen(GxEPD_WHITE);
-  for (int x=0; x<BOARD_WIDTH; x++){
-    for (int y=0; y<BOARD_HEIGHT; y++) {
-      uint16_t color = getCell(x, y) ? GxEPD_BLACK : GxEPD_WHITE;
-      display.fillRect(x*CELL_W, y*CELL_H, CELL_W, CELL_H, color);
+  for (int x=0; x<W; x++){
+    for (int y=0; y<H; y++) {
+      uint16_t color = getPixel(x, y) ? GxEPD_BLACK : GxEPD_WHITE;
+      display.drawPixel(x, y, color);
     }
   }
   display.displayWindow(0, 0, display.width(), display.height());
 }
 
-bool getCell(int x, int y) {
-  return board[x + (BOARD_WIDTH * y)];
+int getXYindex(int x, int y) {
+  if (x >= W || y >= H) {
+    return -1;
+  }
+  return x + (W * y);
 }
 
-void setCell(int x, int y, bool alive) {
-  board[x + (BOARD_WIDTH * y)] = alive;
+bool getPixel(int x, int y) {
+  int idx = getXYindex(x, y);
+  if (idx == -1) {
+    return false;
+  };
+  int byte_address = idx / 8;
+  int bit_pos_MSB_first = 7 - (idx % 8);
+
+  return ((buff[byte_address] & (0x01 << bit_pos_MSB_first)) != 0x00);
+
 }
 
-int getLivingNeighbors(int x, int y) {
-    int n = 0;
-    for (int i=-1; i<2; i++) {
-      for (int j=-1; j<2; j++) {
-        if (i == 0 && j == 0) {
-          // this cell;
-          continue;
-        } else {
-          int nx = x+i;
-          int ny = y+j;
-          if (nx > 0 && nx < BOARD_WIDTH && ny > 0 && ny < BOARD_WIDTH) {
-            int nidx = nx + (BOARD_WIDTH * ny);
-            if (board[nidx]) {
-              n++;
-            }
-          }
+void setPixel(int x, int y, bool filled) {
+  int idx = getXYindex(x, y);
+  if (idx == -1) {
+    return;
+  };
+  int byte_address = idx / 8;
+  int bit_pos_MSB_first = 7 - (idx % 8);
+
+  if (filled) {
+    buff[byte_address] |= (0x01 << bit_pos_MSB_first);
+  } else {
+    buff[byte_address] &= ~(0x01 << bit_pos_MSB_first);
+  };
+}
+
+void initBuff() {
+  int rx = 40;
+  int ry = 200;
+  int rw = 400;
+  int rh = 400;
+  for(int x=0; x<W; x++) {
+    for (int y=0; y<H; y++) {
+       if (((x == rx || x == rx+rw) && y >= ry && y <= ry+rh) ||
+              ((y == ry || y == ry+rh) && x >= rx && x <= rx+rw)) {
+                setPixel(x, y, true);
+      }
+    }
+  }
+}
+
+void updateBuff() {
+    float scl = SCALE;
+    float newWSize = W*(1/scl);
+    float newHSize = H*(1/scl);
+    for (float x=0; x<W; x+=scl) {
+      for (float y=0; y<H; y+=scl) {
+        float new_x = ((W - newWSize)/2) + (x/scl);
+        float new_y = ((H - newHSize)/2) + (y/scl);
+        if (getPixel(x, y)) {
+            setPixel((int)new_x, (int)new_y, true);
         }
       }
     }
-    return n;
-}
-
-void updateBoard() {
-  bool new_board[BOARD_SIZE] = {};
-  for (int x=0; x<BOARD_WIDTH; x++) {
-    for (int y=0; y<BOARD_WIDTH; y++) {
-      int idx = x + (BOARD_WIDTH * y);
-      int neighbors_alive = getLivingNeighbors(x, y);
-      if (neighbors_alive < 2 || neighbors_alive > 3) {
-        new_board[idx] = false;
-      } else if (neighbors_alive == 3) {
-        new_board[idx] = true;
-      } else {
-        new_board[idx] = getCell(x, y);
-      }
-    }
-  }
-
-  for (int i=0; i<BOARD_SIZE; i++) {
-    board[i] = new_board[i];
-  }
-}
-
-void initializeBoard() {
-  for (int i=0; i<BOARD_SIZE; i++) {
-    board[i] = false;
-  }
-
-  for (int i=0; i<300; i++) {
-    int x = random(0, BOARD_WIDTH);
-    int y = random(0, BOARD_HEIGHT);
-    setCell(x, y, true);
-  }
 }
