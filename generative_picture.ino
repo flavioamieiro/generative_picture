@@ -110,10 +110,10 @@ void updateBuff() {
     float newHSize = H*(1/scl);
     for (float x=0; x<W; x+=scl) {
       for (float y=0; y<H; y+=scl) {
-        float new_x = ((W - newWSize)/2) + (x/scl);
-        float new_y = ((H - newHSize)/2) + (y/scl);
         if (getPixel(x, y)) {
-            setPixel((int)new_x, (int)new_y, true);
+          float new_x = ((W - newWSize)/2) + (x/scl);
+          float new_y = ((H - newHSize)/2) + (y/scl);
+          setPixel((int)new_x, (int)new_y, true);
         }
       }
     }
