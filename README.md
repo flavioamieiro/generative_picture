@@ -30,6 +30,33 @@ patch -p1 < 0001-Creates-a-method-to-allow-the-user-to-set-the-curren.patch
 Restart your arduino IDE and you should be able to just upload the
 code.
 
+
+Helper script
+--------------
+
+There is a script to help with encoding and decoding images in the
+format the firmware wants. To use them, you need to install the
+requirements:
+
+`cd scripts/`
+
+`pip install -r requirements.txt`
+
+After that, you can use the script, for example, to decode a binary
+dump of the buffer array from the microcontroller:
+
+`./codec decode -i dump.bin -o dumped_image.png`
+
+Or to convert an image to this binary representation:
+
+`./codec encode -i image.png -o image.bin`
+
+You can also output the image as a C array. This is useful to use
+directly in the firmware as your base image, for example:
+
+`./codec encode -i image.png --as-c-array`
+
+
 License
 -------
 
